@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/head :: head(#{msg.player.list.title})}"></head>
+<body>
+<nav th:replace="~{fragments/header :: header}"></nav>
+
+<div class="container mt-5">
+    <h2 th:text="${playerDTO.id == null} ? #{msg.btn.add} : #{msg.btn.edit}">Formulario</h2>
+    <hr>
+
+    <form th:action="@{/players/save}" th:object="${playerDTO}" method="post" class="col-md-6">
+        <input type="hidden" th:field="*{id}">
+
+        <div class="mb-3">
+            <label class="form-label" th:text="#{msg.player.list.name}">Nombre</label>
+            <input type="text" th:field="*{name}" class="form-control" th:errorclass="is-invalid">
+            <div class="invalid-feedback" th:if="${#fields.hasErrors('name')}" th:errors="*{name}"></div>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label" th:text="#{msg.player.list.number}">Dorsal</label>
+            <input type="number" th:field="*{number}" class="form-control" th:errorclass="is-invalid">
+            <div class="invalid-feedback" th:if="${#fields.hasErrors('number')}" th:errors="*{number}"></div>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label" th:text="#{msg.player.list.team}">Equipo</label>
+            <select th:field="*{teamId}" class="form-select" th:errorclass="is-invalid">
+                <option value="" th:text="'-- Selecciona un equipo --'"></option>
+                <option th:each="t : ${teams}"
+                        th:value="${t.id}"
+                        th:text="${t.name}"></option>
+            </select>
+            <div class="invalid-feedback" th:if="${#fields.hasErrors('teamId')}" th:errors="*{teamId}"></div>
+        </div>
+
+        <button type="submit" class="btn btn-success" th:text="#{msg.btn.save}">Guardar</button>
+        <a th:href="@{/players}" class="btn btn-secondary" th:text="#{msg.btn.cancel}">Cancelar</a>
+    </form>
+</div>
+
+<footer th:replace="~{fragments/footer :: footer}"></footer>
+</body>
+</html>
