@@ -1,5 +1,7 @@
 package org.iesalixar.daw2.dam.ticket_logger_v2_players.controllers;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.iesalixar.daw2.dam.ticket_logger_v2_players.dto.PlayerDTO;
 import org.iesalixar.daw2.dam.ticket_logger_v2_players.entities.Player;
@@ -8,17 +10,16 @@ import org.iesalixar.daw2.dam.ticket_logger_v2_players.mappers.PlayerMapper;
 import org.iesalixar.daw2.dam.ticket_logger_v2_players.repositories.PlayerRepository;
 import org.iesalixar.daw2.dam.ticket_logger_v2_players.repositories.TeamRepository;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Controller;
-import org.springframework.ui.Model;
-import org.springframework.validation.BindingResult;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.util.List;
 import java.util.stream.Collectors;
 
-@Controller // Volvemos a Controller para manejar vistas HTML
-@RequestMapping("/players") // Volvemos a la ruta original de la web
+@RestController // Cambiado: Ahora devuelve datos JSON directamente
+@RequestMapping("/api/v1/players") // Ruta estándar de API
+@Tag(name = "Player Controller", description = "Endpoints para la gestión de jugadores mediante API REST")
 public class PlayerController {
 
     @Autowired
@@ -28,57 +29,48 @@ public class PlayerController {
     private TeamRepository teamRepository;
 
     // LISTADO
+    @Operation(summary = "Obtener todos los jugadores", description = "Retorna una lista de PlayerDTO")
     @GetMapping
-    public String listPlayers(Model model) {
-        List<PlayerDTO> players = playerRepository.findAll().stream()
+    public List<PlayerDTO> listPlayers() {
+        return playerRepository.findAll().stream()
                 .map(PlayerMapper::toDTO)
                 .collect(Collectors.toList());
-        model.addAttribute("players", players);
-        return "players/list"; // Busca src/main/resources/templates/players/list.html
     }
 
-    // FORMULARIO NUEVO
-    @GetMapping("/new")
-    public String showNewForm(Model model) {
-        model.addAttribute("playerDTO", new PlayerDTO());
-        model.addAttribute("teams", teamRepository.findAll());
-        return "players/form";
+    // OBTENER UNO
+    @Operation(summary = "Obtener un jugador por ID")
+    @GetMapping("/{id}")
+    public ResponseEntity<PlayerDTO> getPlayerById(@PathVariable Long id) {
+        return playerRepository.findById(id)
+                .map(player -> ResponseEntity.ok(PlayerMapper.toDTO(player)))
+                .orElse(ResponseEntity.notFound().build());
     }
 
-    // FORMULARIO EDITAR
-    @GetMapping("/edit/{id}")
-    public String showEditForm(@PathVariable Long id, Model model) {
-        Player player = playerRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Invalid player Id:" + id));
-        model.addAttribute("playerDTO", PlayerMapper.toDTO(player));
-        model.addAttribute("teams", teamRepository.findAll());
-        return "players/form";
-    }
+    // GUARDAR (INSERT / UPDATE)
+    @Operation(summary = "Guardar o actualizar un jugador")
+    @PostMapping
+    public ResponseEntity<?> savePlayer(@Valid @RequestBody PlayerDTO playerDTO) {
+        try {
+            Team team = teamRepository.findById(playerDTO.getTeamId())
+                    .orElseThrow(() -> new IllegalArgumentException("ID de equipo no válido: " + playerDTO.getTeamId()));
 
-    // GUARDAR (INSERT/UPDATE)
-    @PostMapping("/save")
-    public String savePlayer(@Valid @ModelAttribute("playerDTO") PlayerDTO playerDTO,
-                             BindingResult result, Model model, RedirectAttributes redirectAttributes) {
-        if (result.hasErrors()) {
-            model.addAttribute("teams", teamRepository.findAll());
-            return "players/form";
+            Player player = PlayerMapper.toEntity(playerDTO, team);
+            Player savedPlayer = playerRepository.save(player);
+
+            return ResponseEntity.status(HttpStatus.CREATED).body(PlayerMapper.toDTO(savedPlayer));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body("Error al procesar la solicitud: " + e.getMessage());
         }
-
-        Team team = teamRepository.findById(playerDTO.getTeamId())
-                .orElseThrow(() -> new IllegalArgumentException("Invalid team Id:" + playerDTO.getTeamId()));
-
-        Player player = PlayerMapper.toEntity(playerDTO, team);
-        playerRepository.save(player);
-
-        redirectAttributes.addFlashAttribute("success", "Operación realizada con éxito");
-        return "redirect:/players";
     }
 
     // ELIMINAR
-    @GetMapping("/delete/{id}")
-    public String deletePlayer(@PathVariable Long id, RedirectAttributes redirectAttributes) {
+    @Operation(summary = "Eliminar un jugador por ID")
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deletePlayer(@PathVariable Long id) {
+        if (!playerRepository.existsById(id)) {
+            return ResponseEntity.notFound().build();
+        }
         playerRepository.deleteById(id);
-        redirectAttributes.addFlashAttribute("success", "Jugador eliminado con éxito");
-        return "redirect:/players";
+        return ResponseEntity.noContent().build(); // Devuelve un 204 No Content (éxito sin cuerpo)
     }
 }

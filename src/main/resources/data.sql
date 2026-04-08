@@ -34,9 +34,9 @@ INSERT INTO players (name, number, team_id) VALUES ('Jude Bellingham', 5, 1);
 INSERT INTO players (name, number, team_id) VALUES ('Robert Lewandowski', 9, 2);
 
 -- 5. INSERTAR USUARIO ADMIN (Contraseña: password)
--- Hemos quitado el {bcrypt} porque el Bean de Java ya sabe que es BCrypt
-INSERT INTO users (username, password, enabled)
-VALUES ('admin', '$2a$12$XTgOAG7cLaOx9U2AzkuWl.APQijl1cb2RKgVS5M0dxf0HMV4T4SJm', 1);
+-- Fíjate que el ID es 1 y el ROLE se pone directamente aquí
+INSERT INTO users (id, username, password, role, enabled)
+VALUES (1, 'admin', '$2a$12$XTgOAG7cLaOx9U2AzkuWl.APQijl1cb2RKgVS5M0dxf0HMV4T4SJm', 'ROLE_ADMIN', 1);
 
 INSERT INTO authorities (username, authority)
 VALUES ('admin', 'ROLE_ADMIN');
