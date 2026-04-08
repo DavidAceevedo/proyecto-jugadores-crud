@@ -19,28 +19,37 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
-                .csrf(csrf -> csrf.disable()) // OBLIGATORIO PARA APIS
+                .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
-                        // Permitimos acceso a la web de Swagger y a los docs JSON
-                        .requestMatchers("/v3/api-elements/**", "/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
+                        // Permitimos recursos estáticos y la página de login
+                        .requestMatchers("/css/**", "/js/**", "/images/**", "/login").permitAll()
                         .anyRequest().authenticated()
                 )
-                // Esto permite que Swagger mande las credenciales en la cabecera (Basic Auth)
-                .httpBasic(Customizer.withDefaults())
-                // Puedes mantener esto para entrar por web, pero Swagger priorizará lo de arriba
-                .formLogin(Customizer.withDefaults());
+                // LOGIN POR FORMULARIO (El de la cajita de Spring)
+                .formLogin(Customizer.withDefaults())
+
+                // ¡ESTO ES LO QUE HACÍA FALTA! LOGIN CON GITHUB
+                .oauth2Login(Customizer.withDefaults())
+
+                // Mantenemos Basic Auth por si quieres probar algo rápido
+                .httpBasic(Customizer.withDefaults());
 
         return http.build();
     }
 
     @Bean
     public UserDetailsManager userDetailsManager(DataSource dataSource) {
-        return new JdbcUserDetailsManager(dataSource);
+        JdbcUserDetailsManager userDetailsManager = new JdbcUserDetailsManager(dataSource);
+
+        // Estas consultas son necesarias si tus tablas no se llaman exactamente como pide Spring por defecto
+        userDetailsManager.setUsersByUsernameQuery("select username, password, enabled from users where username=?");
+        userDetailsManager.setAuthoritiesByUsernameQuery("select username, authority from authorities where username=?");
+
+        return userDetailsManager;
     }
 
     @Bean
     public PasswordEncoder passwordEncoder() {
-        // Usamos BCrypt puro (fuerza por defecto) igual que en tu otro proyecto
         return new BCryptPasswordEncoder();
     }
 }
