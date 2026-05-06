@@ -27,7 +27,8 @@
             <td th:text="${p.number}">10</td>
             <td th:text="${p.teamName}">Equipo</td>
             <td>
-                <a th:href="@{/players/edit/{id}(id=${p.id})}" class="btn btn-sm btn-warning" th:text="#{msg.btn.edit}">Editar</a>
+                <a th:href="@{/players/edit/{id}(id=${p.id})}" class="btn btn-sm btn-warning"
+                   th:text="#{msg.btn.edit}">Editar</a>
                 <a th:href="@{/players/delete/{id}(id=${p.id})}"
                    class="btn btn-sm btn-danger"
                    th:onclick="return confirm('¿Seguro?')"
